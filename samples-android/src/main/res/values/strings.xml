@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Koml Sample</string>
+    <string name="pick_model">Pick a curated model:</string>
+    <string name="download">Download</string>
+    <string name="load">Load</string>
+    <string name="delete">Delete</string>
     <string name="generate">Generate</string>
     <string name="cancel">Cancel</string>
-    <string name="initial_hint">Press Generate to stream tokens. Press Cancel to abort mid-stream.</string>
+    <string name="initial_hint">Download a model, then Load, then Generate. Cancel aborts mid-stream.</string>
 </resources>

@@ -18,4 +18,8 @@ rootProject.name = "Koml"
 
 include(":core")
 include(":engine-llama")
+include(":storage")
+include(":download")
+include(":registry")
 include(":samples-android")
+include(":samples-desktop")

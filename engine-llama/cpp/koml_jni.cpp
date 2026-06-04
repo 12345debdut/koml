@@ -6,12 +6,18 @@
 #include <jni.h>
 #include <string>
 #include <vector>
-#include <android/log.h>
 #include "llama.h"
 
+#ifdef __ANDROID__
+#include <android/log.h>
 #define TAG "KomlEngine"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
+#else
+#include <cstdio>
+#define LOGI(fmt, ...) fprintf(stderr, "[KomlEngine] " fmt "\n", ##__VA_ARGS__)
+#define LOGE(fmt, ...) fprintf(stderr, "[KomlEngine][ERR] " fmt "\n", ##__VA_ARGS__)
+#endif
 
 static void throw_jni(JNIEnv *env, const char *msg) {
     jclass cls = env->FindClass("java/lang/RuntimeException");

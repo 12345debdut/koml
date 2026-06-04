@@ -16,6 +16,8 @@ The Metal source string compiled into the binary is missing the type definitions
 
 **Workaround:** `scripts/build-llama-ios.sh` builds with `-DGGML_METAL=OFF -DGGML_ACCELERATE=ON`. `cinterop/llama.def` drops `-framework Metal -framework MetalKit` from `linkerOpts`. iOS runs on CPU with Apple's Accelerate-accelerated BLAS, which is fast enough for the small models we ship.
 
+**JVM macOS** keeps Metal on — the embed bug is iOS-specific in b5460. If the macOS JVM build ever hits the same error, fall back to `-DGGML_METAL=OFF` in `scripts/build-llama-jvm.sh`.
+
 **Plan:**
 - Phase 3 polish: re-investigate when we bump llama.cpp to a newer tag (the embed bug is upstream-known and may already be fixed).
 - Alternative: ship the `.metallib` as a bundle resource and load at runtime (`GGML_METAL_EMBED_LIBRARY=OFF`).
@@ -35,45 +37,31 @@ Plus `:samples-android` applies `kotlin-android` explicitly. AGP reverts to its 
 
 **Plan:** Migrate to `com.android.kotlin.multiplatform.library` post-v1, once the NDK + CMake DSL has documented examples for static-lib subprojects.
 
-## 3. Cinterop commonization warning
+## 3. Cinterop commonization (RESOLVED in v0.0.2)
 
-**Status:** cosmetic warning; tracked for Phase 2.
+`kotlin.mpp.enableCInteropCommonization=true` is now in `gradle.properties`. Iosmain code can share native bindings across iOS targets without per-arch duplication; no more warning at link time.
 
-**Symptom:** Every iOS link logs:
+## 4. expect/actual classes are in Beta (RESOLVED in v0.0.2)
+
+Every KMP module's `kotlin {}` block now sets:
+```kotlin
+compilerOptions {
+    freeCompilerArgs.add("-Xexpect-actual-classes")
+}
 ```
-w: ⚠️ CInterop Commonization Disabled
-The project is using Kotlin Multiplatform with hierarchical structure ...
-```
-
-**Fix:** Add to `gradle.properties`:
-```
-kotlin.mpp.enableCInteropCommonization=true
-```
-Deferred to Phase 2 because we don't yet share `iosMain` code that needs commonized native bindings; once the registry/downloader land we may need shared `appleMain` code.
-
-## 4. expect/actual classes are in Beta
-
-**Status:** cosmetic warning; suppress in Phase 2.
-
-**Symptom:** Every Kotlin compile logs:
-```
-w: ... 'expect'/'actual' classes ... are in Beta.
-Consider using the '-Xexpect-actual-classes' flag to suppress this warning.
-```
-
-**Fix:** Add `-Xexpect-actual-classes` to `compilerOptions.freeCompilerArgs` in each KMP module's `kotlin {}` block. The feature is stable in practice — Koml uses `expect class LlamaNative` extensively.
+The ~30 Beta warnings are gone. The feature is stable in practice and Koml uses `expect class LlamaNative` extensively.
 
 ## 5. llama.cpp b5460 API renames
 
 **Status:** documented, code matches.
 
-llama.cpp at b5460 split `llama_vocab` out of `llama_model` and renamed several lifecycle functions. The full mapping is in `~/.claude/projects/.../memory/project_llamacpp_api_b5460.md`. Both the Android JNI bridge (`koml_jni.cpp`) and the iOS cinterop bindings (`LlamaNative.ios.kt`) use the post-split API. Reference when bumping the llama.cpp submodule.
+llama.cpp at b5460 split `llama_vocab` out of `llama_model` and renamed several lifecycle functions. The full mapping is in `~/.claude/projects/.../memory/project_llamacpp_api_b5460.md`. The Android JNI bridge (`engine-llama/cpp/koml_jni.cpp`, shared with the JVM JNI build) and the iOS cinterop bindings (`LlamaNative.ios.kt`) all use the post-split API. Reference when bumping the llama.cpp submodule.
 
 ## 6. llama.cpp standalone build flags
 
 **Status:** documented, scripts match.
 
-When llama.cpp is invoked via `add_subdirectory()` (Android path), `LLAMA_STANDALONE=OFF` and most extras (tools, examples, tests) are off by default. When invoked directly via `cmake -S llama.cpp` (iOS path, and the future JVM/native paths), `LLAMA_STANDALONE=ON` and you must pass:
+When llama.cpp is invoked via `add_subdirectory()` (Android path), `LLAMA_STANDALONE=OFF` and most extras are off by default. When invoked directly via `cmake -S llama.cpp` (iOS and JVM paths), `LLAMA_STANDALONE=ON` and you must pass:
 ```
 -DLLAMA_BUILD_EXAMPLES=OFF
 -DLLAMA_BUILD_TESTS=OFF
@@ -82,22 +70,37 @@ When llama.cpp is invoked via `add_subdirectory()` (Android path), `LLAMA_STANDA
 -DLLAMA_BUILD_COMMON=OFF
 -DLLAMA_CURL=OFF
 ```
+Both `scripts/build-llama-ios.sh` and `scripts/build-llama-jvm.sh` do this. Tracked in `memory/project_llamacpp_standalone_build.md`.
 
-`scripts/build-llama-ios.sh` already does this. Phase 2 build scripts for JVM/native must do the same. Tracked in `memory/project_llamacpp_standalone_build.md`.
+## 7. JVM platform coverage (macOS only in v0.0.2)
 
-## 7. Stub registry and downloader
+**Status:** intentional v0.0.2 scope; Linux/Windows JVM builds are tracked for v0.0.4 (CI) or earlier if you need them.
 
-**Status:** Phase 2 will replace these.
+`scripts/build-llama-jvm.sh` builds for macOS arm64 + x64 only. `LlamaNative.jvm.kt`'s `detectArch()` throws on Linux/Windows with a clear message pointing the user at the build script. To add Linux x64:
+1. Run `scripts/build-llama-jvm.sh` on a Linux host (or via Docker `linux/amd64`).
+2. Place the resulting `libkoml-jni.so` at `build/llama-jvm/linux-x64/libkoml-jni.so`.
+3. Add a `from(sourceRoot.dir("linux-x64"))` block to the `collectJvmNativeLibs` task in `engine-llama/build.gradle.kts`.
+4. Add a `"linux-x64"` arm to `LlamaNative.jvm.kt`'s `detectArch()`.
 
-`StubRegistry.curated()` returns `emptyList()`. `StubDownloader.download(...)` emits `DownloadState.Failed` immediately. The public interfaces exist so the API is stable from Phase 1 onward; the implementations are placeholders.
+Phase 4 will set up GitHub Actions to do this automatically per-OS.
 
-## 8. No `chat()` yet
+## 8. Curated manifest SHA-256s are placeholders
+
+**Status:** v0.0.2 ships with `sha256 = "TODO_..."` placeholders.
+
+The `:registry` module's `CuratedModels.list` has placeholder SHA-256 strings for all five models — downloads will fail their integrity check until the real hashes are filled in. Run:
+```bash
+./scripts/refresh-manifest-shas.sh
+```
+to download each GGUF, compute the real SHA-256 and byte size, and print a paste-ready diff for `CuratedModels.kt`. Must be re-run whenever a model file on HuggingFace gets re-quantized.
+
+## 9. No `chat()` yet
 
 **Status:** Phase 3.
 
 `DefaultLlmSession.chat(...)` throws `NotImplementedError`. Use `generate()` with a manually-formatted prompt that matches your model's template until chat templates land in Phase 3.
 
-## 9. Configuration cache not enabled
+## 10. Configuration cache not enabled
 
 **Status:** cosmetic suggestion from Gradle 9.1.
 

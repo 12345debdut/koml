@@ -15,8 +15,8 @@ set(BUILD_SHARED_LIBS    OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${LLAMA_CPP_DIR} ${CMAKE_CURRENT_BINARY_DIR}/llama.cpp)
 
-# JNI bridge
-add_library(koml-jni SHARED koml_jni.cpp)
+# JNI bridge — source lives at engine-llama/cpp/ so it's shared with the JVM target.
+add_library(koml-jni SHARED ${CMAKE_CURRENT_SOURCE_DIR}/../../../cpp/koml_jni.cpp)
 
 target_include_directories(koml-jni PRIVATE
     ${LLAMA_CPP_DIR}/include

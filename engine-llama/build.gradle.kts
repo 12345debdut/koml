@@ -6,10 +6,34 @@ plugins {
     alias(libs.plugins.skie)
 }
 
+// Pre-built native libs land at build/llama-jvm/<arch>/libkoml-jni.dylib after
+// scripts/build-llama-jvm.sh runs. This task stages them under
+// META-INF/native/<arch>/ so they get packaged into the JVM JAR and can be
+// extracted at runtime by LlamaNative.jvm.kt.
+val collectJvmNativeLibs by tasks.registering(Copy::class) {
+    val sourceRoot = rootProject.layout.projectDirectory.dir("build/llama-jvm")
+    val destRoot = layout.buildDirectory.dir("generated/native-resources")
+
+    from(sourceRoot.dir("macos-arm64")) {
+        include("libkoml-jni.dylib")
+        into("META-INF/native/macos-arm64")
+    }
+    from(sourceRoot.dir("macos-x64")) {
+        include("libkoml-jni.dylib")
+        into("META-INF/native/macos-x64")
+    }
+    into(destRoot)
+}
+
 kotlin {
     jvmToolchain(17)
 
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     androidTarget()
+    jvm()
 
     val xcf = XCFramework("KomlEngine")
     val iosTargets = listOf(
@@ -53,9 +77,21 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":core"))
+            api(project(":storage"))
+            api(project(":download"))
+            api(project(":registry"))
             implementation(libs.kotlinx.coroutines.core)
         }
+        named("jvmMain") {
+            resources.srcDir(collectJvmNativeLibs.map { it.destinationDir })
+        }
     }
+}
+
+// Make the resources processing depend on the native lib copy so the JAR
+// always contains the freshest .dylib slices.
+tasks.named("jvmProcessResources").configure {
+    dependsOn(collectJvmNativeLibs)
 }
 
 skie {
