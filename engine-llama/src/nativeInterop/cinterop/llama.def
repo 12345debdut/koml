@@ -1,0 +1,6 @@
+language = C
+package = dev.koml.engine.native
+headers = llama.h
+headerFilter = llama.h ggml*.h
+linkerOpts = -lc++ -framework Foundation -framework Accelerate
+staticLibraries = libkoml-llama.a

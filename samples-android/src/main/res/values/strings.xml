@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Koml Sample</string>
+    <string name="generate">Generate</string>
+    <string name="cancel">Cancel</string>
+    <string name="initial_hint">Press Generate to stream tokens. Press Cancel to abort mid-stream.</string>
+</resources>

@@ -1,0 +1,56 @@
+name: KomlSample
+options:
+  bundleIdPrefix: dev.koml
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+targets:
+  KomlSample:
+    type: application
+    platform: iOS
+    sources:
+      - path: KomlSample
+        excludes:
+          - "Resources/.gitkeep"
+    resources:
+      - path: KomlSample/Resources
+        optional: true
+    dependencies:
+      - framework: ../engine-llama/build/XCFrameworks/debug/KomlEngine.xcframework
+        embed: true
+        codeSign: true
+    info:
+      path: KomlSample/Info.plist
+      properties:
+        UILaunchScreen: {}
+        CFBundleDisplayName: Koml Sample
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.koml.samples.ios
+        TARGETED_DEVICE_FAMILY: "1,2"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        GENERATE_INFOPLIST_FILE: NO
+    preBuildScripts:
+      - name: "Build KMP XCFramework"
+        basedOnDependencyAnalysis: false
+        script: |
+          set -e
+          cd "$PROJECT_DIR/.."
+          # Pick up a JDK from common locations if Xcode's PATH is missing one
+          if ! command -v java >/dev/null 2>&1; then
+            if [ -d "/opt/homebrew/opt/openjdk@17" ]; then
+              export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
+            elif [ -d "/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home" ]; then
+              export JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home"
+            fi
+            export PATH="$JAVA_HOME/bin:$PATH"
+          fi
+          ./gradlew :engine-llama:assembleKomlEngineDebugXCFramework
