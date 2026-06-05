@@ -1,8 +1,12 @@
 # Koml
 
+[![CI](https://github.com/debdutsaha/koml/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/debdutsaha/koml/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.2.10-blue.svg?logo=kotlin)](https://kotlinlang.org)
+
 On-device LLM inference for Kotlin Multiplatform — a thin, idiomatic Kotlin wrapper over [llama.cpp](https://github.com/ggml-org/llama.cpp). Coroutines and Flow on the surface, GGUF and `llama.cpp` underneath. Works on Android, iOS, JVM desktop, and macOS native today.
 
-> ⚠️ **Pre-1.0 — under active development.** APIs in `:core` are frozen. See [`docs/phase-3-summary.md`](docs/phase-3-summary.md) for the current state.
+> ⚠️ **Pre-1.0 — under active development.** APIs in `:core` are frozen. See [`docs/phase-4-summary.md`](docs/phase-4-summary.md) for the current state.
 
 ## Status
 
@@ -163,8 +167,15 @@ cd samples-ios && xcodegen && open KomlSample.xcodeproj
 | 1 | Full KMP engine, iOS bindings, streaming API | ✅ Done |
 | 2 | JVM desktop, registry, downloader, storage, license gate | ✅ Done |
 | 3 | Chat templates, HF search, native targets, error+KDoc polish, tests | ✅ Done |
-| 4 | Maven Central publishing, CI, contributing docs | ⏳ Next |
+| 4 | Maven Central publishing, CI, contributing docs | ✅ Done |
+| — | First Central publish + community-driven iteration | ⏳ Next |
 
 ## License
 
-Apache 2.0 (to be added in Phase 4). llama.cpp is MIT-licensed.
+[Apache License 2.0](LICENSE). llama.cpp is MIT-licensed and vendored as a submodule.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, conventions, and what makes a good PR. By participating in any project space you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Maintainer-only: see [docs/PUBLISHING.md](docs/PUBLISHING.md) for the Maven Central release flow.

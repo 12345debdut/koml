@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  jvm-tests:
+    name: JVM build + tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout (with llama.cpp submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle (with build cache)
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Compile JVM
+        run: |
+          ./gradlew \
+            :core:compileKotlinJvm \
+            :storage:compileKotlinJvm \
+            :download:compileKotlinJvm \
+            :registry:compileKotlinJvm \
+            :engine-llama:compileKotlinJvm \
+            --no-daemon --stacktrace
+
+      - name: Run JVM tests
+        run: |
+          ./gradlew \
+            :download:jvmTest \
+            :engine-llama:jvmTest \
+            --no-daemon --stacktrace
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.os }}
+          path: |
+            */build/reports/tests/**
+            */build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 7
+
+  android-lint:
+    name: Android sample build (Ubuntu)
+    runs-on: ubuntu-latest
+    # Android build is cheap on Ubuntu (no NDK build of llama.cpp needed for
+    # this — that's gated to release builds via :samples-android only being a
+    # consumer of the AAR). Kept in a separate job so a Kotlin/JVM failure
+    # doesn't mask an Android resource regression.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Compile Android module Kotlin
+        run: |
+          ./gradlew \
+            :core:compileDebugKotlinAndroid \
+            :storage:compileDebugKotlinAndroid \
+            :download:compileDebugKotlinAndroid \
+            :registry:compileDebugKotlinAndroid \
+            :engine-llama:compileDebugKotlinAndroid \
+            :samples-android:compileDebugKotlin \
+            --no-daemon --stacktrace

@@ -11,6 +11,7 @@ kotlinx-serialization = "1.9.0"
 kotlincrypto-hash = "0.6.0"
 androidx-startup = "1.2.0"
 compose-multiplatform = "1.8.2"
+nmcp = "0.1.5"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -40,3 +41,5 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+nmcp-aggregation = { id = "com.gradleup.nmcp.aggregation", version.ref = "nmcp" }
+nmcp-publish = { id = "com.gradleup.nmcp", version.ref = "nmcp" }

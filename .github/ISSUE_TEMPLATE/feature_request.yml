@@ -1,0 +1,52 @@
+name: Feature request
+description: Suggest a new capability or API
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Big new features are usually best discussed in [Discussions](https://github.com/debdutsaha/koml/discussions) first — this template is for concrete, well-scoped proposals that have already had a round of design conversation.
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: What problem does this solve?
+      description: What can't you do today? Why does it matter? Concrete use cases beat abstract justifications.
+      placeholder: |
+        I want to ship a Kotlin/Native CLI tool that runs on Linux x64, but `:engine-llama` doesn't have a linuxX64 target yet…
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed shape
+      description: API sketch, file paths, how it'd interact with existing types.
+      render: kotlin
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other shapes did you think about? Why is this one better?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: How big a change is this?
+      options:
+        - Small (new method on existing type, < 50 LOC)
+        - Medium (new file or two, < 500 LOC)
+        - Large (new module, breaking change, or platform target)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Are you offering to contribute the PR?
+      options:
+        - label: Yes — I plan to open the PR myself once the design is agreed.
+        - label: No — I'm flagging the gap and hoping someone (maintainer or other contributor) picks it up.

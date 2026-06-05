@@ -4,4 +4,99 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.skie) apply false
+    alias(libs.plugins.nmcp.aggregation)
+}
+
+// Single source of truth for group + version. Library modules pick these up via
+// subprojects { ... } below; sample modules ignore the publishing config entirely.
+allprojects {
+    group = "dev.koml"
+    version = "0.0.4"
+}
+
+// Publishable modules. Anything not listed here is a sample/app and won't ship
+// to Maven Central.
+val publishableModules = setOf("core", "storage", "download", "registry", "engine-llama")
+
+subprojects {
+    if (name !in publishableModules) return@subprojects
+
+    apply(plugin = "maven-publish")
+    apply(plugin = "signing")
+
+    extensions.configure<PublishingExtension>("publishing") {
+        publications.withType<MavenPublication>().configureEach {
+            pom {
+                name.set("Koml :${this@subprojects.name}")
+                description.set(
+                    "Koml — on-device LLM inference for Kotlin Multiplatform. " +
+                        "A thin, idiomatic Kotlin wrapper over llama.cpp with Flow-based " +
+                        "streaming on Android, iOS, JVM desktop, and macOS native.",
+                )
+                url.set("https://github.com/debdutsaha/koml")
+                licenses {
+                    license {
+                        name.set("Apache License 2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                        distribution.set("repo")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("debdutsaha")
+                        name.set("Debdut Saha")
+                        email.set("debdut.saha.1@gmail.com")
+                    }
+                }
+                scm {
+                    url.set("https://github.com/debdutsaha/koml")
+                    connection.set("scm:git:https://github.com/debdutsaha/koml.git")
+                    developerConnection.set("scm:git:git@github.com:debdutsaha/koml.git")
+                }
+                issueManagement {
+                    system.set("GitHub")
+                    url.set("https://github.com/debdutsaha/koml/issues")
+                }
+            }
+        }
+    }
+
+    // Signing — only kicks in for release builds. Reads credentials from
+    // ~/.gradle/gradle.properties or env vars (set in CI), so local dev
+    // builds never need to sign.
+    extensions.configure<SigningExtension>("signing") {
+        val signingKey = providers.gradleProperty("signingInMemoryKey")
+            .orElse(provider { System.getenv("SIGNING_IN_MEMORY_KEY") })
+            .orNull
+        val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword")
+            .orElse(provider { System.getenv("SIGNING_IN_MEMORY_KEY_PASSWORD") })
+            .orNull
+
+        isRequired = !version.toString().endsWith("SNAPSHOT") &&
+            gradle.taskGraph.allTasks.any { it.name.contains("publish", ignoreCase = true) }
+
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        } else {
+            // Fall back to `gpg --use-agent` for local maintainer publishes.
+            useGpgCmd()
+        }
+        sign(extensions.getByType<PublishingExtension>().publications)
+    }
+}
+
+// Wire every publishable module's publications into the aggregation plugin so a
+// single ./gradlew publishToCentralPortal stages all five module bundles.
+nmcpAggregation {
+    centralPortal {
+        username = providers.gradleProperty("mavenCentralUsername")
+            .orElse(provider { System.getenv("MAVEN_CENTRAL_USERNAME") })
+        password = providers.gradleProperty("mavenCentralPassword")
+            .orElse(provider { System.getenv("MAVEN_CENTRAL_PASSWORD") })
+        // After upload, leave the bundle in the Portal in "validated" state so a
+        // human can click "Publish" at central.sonatype.com. Switch to
+        // "AUTOMATIC" once we've shipped a few releases and trust the pipeline.
+        publishingType = "USER_MANAGED"
+    }
+    publishAllProjectsProbablyBreakingProjectIsolation()
 }

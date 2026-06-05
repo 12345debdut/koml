@@ -1,0 +1,84 @@
+name: Curated model request
+description: Suggest a model for the bundled curated list in `:registry`
+labels: [model-request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We curate a small list of ungated, permissively-licensed GGUF models that ship in `:registry`. To keep that list maintainable we have a few non-negotiables — please check the criteria below before filing.
+
+  - type: input
+    id: model-name
+    attributes:
+      label: Model display name
+      placeholder: "Llama 4 Scout 8B Instruct"
+    validations:
+      required: true
+
+  - type: input
+    id: hf-repo
+    attributes:
+      label: HuggingFace repo path
+      description: The full repo path you'd `git clone` from.
+      placeholder: meta-llama/Llama-4-Scout-8B-Instruct-GGUF
+    validations:
+      required: true
+
+  - type: input
+    id: gguf-file
+    attributes:
+      label: GGUF filename within the repo
+      placeholder: Llama-4-Scout-8B-Instruct-Q4_K_M.gguf
+    validations:
+      required: true
+
+  - type: input
+    id: license
+    attributes:
+      label: License SPDX id
+      placeholder: Apache-2.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prompt-template
+    attributes:
+      label: Prompt template family
+      options:
+        - None
+        - ChatML
+        - Llama3
+        - Phi3
+        - Gemma
+        - Other (please describe in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: context-window
+    attributes:
+      label: Context window (tokens)
+      placeholder: "8192"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: criteria
+    attributes:
+      label: Curated-list criteria
+      description: All of these must be true for a model to make the curated list.
+      options:
+        - label: The model is **ungated** — direct download works without HF auth.
+          required: true
+        - label: The license is permissive (Apache-2.0, MIT, or BSD-style). Custom community licenses can be suggested but require maintainer review.
+          required: true
+        - label: The GGUF file is under 4 GB.
+          required: true
+        - label: I've tested that `llama.cpp` at the version Koml pins (currently b5460) loads it without errors.
+          required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else worth knowing — particular strengths, weird quirks, why it'd be a good addition.

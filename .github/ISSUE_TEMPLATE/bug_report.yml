@@ -1,0 +1,85 @@
+name: Bug report
+description: Something's broken or behaves unexpectedly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. The more concrete the repro, the faster we can fix it.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the unexpected behaviour. What did you see vs. what did you expect?
+      placeholder: |
+        I called `coordinator.downloader.download(model)` and the flow emitted `Failed` with…
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproducer
+      description: Code or steps that produce the bug from a fresh state.
+      render: kotlin
+      placeholder: |
+        val coordinator = LlmKit.initialize()
+        val model = coordinator.registry.curated().first()
+        ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target
+    attributes:
+      label: Target
+      multiple: true
+      options:
+        - Android
+        - iOS
+        - JVM desktop (macOS)
+        - JVM desktop (Linux, build-from-source)
+        - Kotlin/Native macOS
+    validations:
+      required: true
+
+  - type: input
+    id: koml-version
+    attributes:
+      label: Koml version
+      placeholder: "0.0.4"
+    validations:
+      required: true
+
+  - type: input
+    id: model-id
+    attributes:
+      label: Model id (if relevant)
+      placeholder: smollm2-135m-instruct-q8
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS + version, JDK version, device/simulator details, Gradle version (`./gradlew --version`)
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Stack traces, Logcat extracts, Xcode console output. Triple-backtick a long block.
+      render: shell
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and didn't find a duplicate.
+          required: true
+        - label: I've read `docs/known-issues.md` and this isn't one of the listed gotchas.
+          required: true

@@ -108,8 +108,6 @@ to download each GGUF, compute the real SHA-256 and byte size, and print a paste
 
 **Plan:** v0.0.4+ may add `searchHuggingFace(query, withFileDetails = true)` that fans out per result. Off by default to keep the cheap path cheap.
 
-## 10. Configuration cache not enabled
+## 10. ~~Configuration cache not enabled~~ (RESOLVED in v0.0.4)
 
-**Status:** cosmetic suggestion from Gradle 9.1.
-
-Gradle suggests `org.gradle.configuration-cache=true` to speed up incremental builds. Not enabled yet because we haven't audited all build scripts for config-cache compatibility (especially the cmake/cinterop tasks). Phase 4 cleanup.
+`org.gradle.configuration-cache=true` is now in `gradle.properties`. Phase 4 audited the JVM tests, Android assemble, and iOS XCFramework + SKIE paths — all three are config-cache-compatible at the current plugin versions. Roughly halves warm-run config time.
