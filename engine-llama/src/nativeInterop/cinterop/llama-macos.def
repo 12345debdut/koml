@@ -1,0 +1,10 @@
+language = C
+package = dev.koml.engine.native
+headers = llama.h
+headerFilter = llama.h ggml*.h
+# macOS native targets can use Metal — the b5460 embed bug that bites iOS
+# doesn't affect macOS builds. linkerOpts pull in the system frameworks
+# llama.cpp expects when GGML_METAL=ON + GGML_ACCELERATE=ON were enabled
+# at build time (see scripts/build-llama-macos-native.sh).
+linkerOpts = -lc++ -framework Foundation -framework Accelerate -framework Metal -framework MetalKit
+staticLibraries = libkoml-llama.a

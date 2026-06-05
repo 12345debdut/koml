@@ -31,6 +31,13 @@ internal suspend fun sha256OfFile(
     hash.digest().toHexLower()
 }
 
+/** Compute the SHA-256 of the in-memory [bytes] and return a lower-hex string. */
+internal fun sha256OfBytes(bytes: ByteArray): String {
+    val hash = SHA256()
+    hash.update(bytes, 0, bytes.size)
+    return hash.digest().toHexLower()
+}
+
 /** Hex-encode a byte array as a lower-case string. */
 internal fun ByteArray.toHexLower(): String {
     val chars = CharArray(size * 2)

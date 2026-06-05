@@ -40,7 +40,9 @@ internal class DefaultLlmSession(
 
     override fun generate(prompt: String, params: GenParams): Flow<TokenEvent> = flow {
         if (unloaded) {
-            emit(TokenEvent.Error(KomlException.InferenceException("Session has been unloaded")))
+            emit(TokenEvent.Error(KomlException.InferenceException(
+                "Session for model '${model.id}' was already unloaded; obtain a fresh one via coordinator.loadModel(...)"
+            )))
             return@flow
         }
 
@@ -49,12 +51,17 @@ internal class DefaultLlmSession(
         val promptTokens = try {
             native.tokenize(modelPtr, prompt, addBos = true)
         } catch (e: Throwable) {
-            emit(TokenEvent.Error(KomlException.InferenceException("Tokenization failed: ${e.message}", e)))
+            emit(TokenEvent.Error(KomlException.InferenceException(
+                "Tokenization failed for model '${model.id}': ${e.message}", e,
+            )))
             return@flow
         }
 
         if (!native.decode(contextPtr, promptTokens)) {
-            emit(TokenEvent.Error(KomlException.InferenceException("Decode failed for prompt")))
+            emit(TokenEvent.Error(KomlException.InferenceException(
+                "Decode failed for prompt (${promptTokens.size} tokens) on model '${model.id}' — " +
+                    "context window ($contextWindow) may be exceeded.",
+            )))
             return@flow
         }
 
@@ -88,7 +95,10 @@ internal class DefaultLlmSession(
             generated++
 
             if (!native.decode(contextPtr, intArrayOf(token))) {
-                emit(TokenEvent.Error(KomlException.InferenceException("Decode failed mid-generation")))
+                emit(TokenEvent.Error(KomlException.InferenceException(
+                    "Decode failed at generated token #$generated on model '${model.id}' — " +
+                        "context window ($contextWindow) likely exceeded.",
+                )))
                 return@flow
             }
 
@@ -127,7 +137,17 @@ internal class DefaultLlmSession(
     }
 
     override suspend fun chat(messages: List<ChatMessage>, params: GenParams): Flow<TokenEvent> {
-        throw NotImplementedError("chat() requires prompt templates per model family — coming in Phase 3. Use generate() for now.")
+        val template = dev.koml.engine.chat.ChatTemplate.forPromptTemplate(model.promptTemplate)
+        val prompt = template.render(messages)
+        // Merge template's default stop sequences with caller-supplied ones so
+        // the assistant turn terminates cleanly without forcing every caller
+        // to remember each model's special tokens.
+        val effectiveParams = if (template.defaultStopSequences.isEmpty()) {
+            params
+        } else {
+            params.copy(stopSequences = (params.stopSequences + template.defaultStopSequences).distinct())
+        }
+        return generate(prompt, effectiveParams)
     }
 
     override suspend fun tokenCount(text: String): Int = withContext(sessionDispatcher) {

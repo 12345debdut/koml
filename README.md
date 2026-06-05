@@ -1,18 +1,19 @@
 # Koml
 
-On-device LLM inference for Kotlin Multiplatform — a thin, idiomatic Kotlin wrapper over [llama.cpp](https://github.com/ggml-org/llama.cpp). Coroutines and Flow on the surface, GGUF and `llama.cpp` underneath. Works on Android, iOS, and JVM desktop today; macOS / Linux native binaries land later.
+On-device LLM inference for Kotlin Multiplatform — a thin, idiomatic Kotlin wrapper over [llama.cpp](https://github.com/ggml-org/llama.cpp). Coroutines and Flow on the surface, GGUF and `llama.cpp` underneath. Works on Android, iOS, JVM desktop, and macOS native today.
 
-> ⚠️ **Pre-1.0 — under active development.** APIs in `:core` are stable. See [`docs/phase-2-summary.md`](docs/phase-2-summary.md) for the current state.
+> ⚠️ **Pre-1.0 — under active development.** APIs in `:core` are frozen. See [`docs/phase-3-summary.md`](docs/phase-3-summary.md) for the current state.
 
 ## Status
 
 | Target | Engine | Streaming | Sample |
 |---|---|---|---|
-| Android | ✅ (JNI) | ✅ Flow | ✅ `:samples-android` |
-| iOS | ✅ (cinterop, CPU only — see [#1](docs/known-issues.md#1-metal-disabled-on-ios)) | ✅ Flow → Swift `AsyncSequence` via SKIE | ✅ `samples-ios/` |
-| JVM desktop (macOS arm64 + x64) | ✅ (JNI) | ✅ Flow | ✅ `:samples-desktop` (Compose) |
-| JVM desktop (Linux, Windows) | ⏳ build from source — see [#7](docs/known-issues.md#7-jvm-platform-coverage-macos-only-in-v002) | — | — |
-| Native (macOS, Linux) | ⏳ Phase 3 | — | — |
+| Android (arm64-v8a) | ✅ JNI | ✅ Flow | ✅ `:samples-android` |
+| iOS (arm64 device + simulator) | ✅ cinterop, CPU only ([#1](docs/known-issues.md)) | ✅ Flow → Swift `AsyncSequence` (SKIE) | ✅ `samples-ios/` |
+| JVM desktop (macOS arm64 + x64) | ✅ JNI | ✅ Flow | ✅ `:samples-desktop` (Compose) |
+| JVM desktop (Linux, Windows) | ⏳ build from source ([#7](docs/known-issues.md)) | — | — |
+| Kotlin/Native (macOS arm64 + x64) | ✅ cinterop, Metal-accelerated | ✅ Flow | — (consume as a klib) |
+| Kotlin/Native (Linux) | ⏳ v0.0.4 | — | — |
 
 | Feature | Status |
 |---|---|
@@ -20,54 +21,59 @@ On-device LLM inference for Kotlin Multiplatform — a thin, idiomatic Kotlin wr
 | Per-session single-threaded dispatcher | ✅ |
 | Cancellation via Flow / `Task.cancel()` | ✅ |
 | Stop-sequence detection | ✅ |
-| Model download with resume + SHA-256 | ✅ (v0.0.2) |
-| Curated model registry (5 ungated models) | ✅ (v0.0.2) |
-| License acceptance gate | ✅ (v0.0.2) |
-| Platform-aware storage (`:storage`) | ✅ (v0.0.2) |
-| Hugging Face Hub search | ⏳ Phase 3 |
-| Chat templates (chatml, llama3, phi3, gemma) | ⏳ Phase 3 |
+| Model download with resume + SHA-256 | ✅ |
+| Curated model registry (5 ungated models) | ✅ |
+| License acceptance gate | ✅ |
+| Platform-aware storage (`:storage`) | ✅ |
+| Chat templates (chatml, llama3, phi3, gemma) | ✅ (v0.0.3) |
+| Hugging Face Hub search | ✅ (v0.0.3, metadata-only) |
+| Integration tests (MockEngine + FakeFileSystem) | ✅ (v0.0.3) |
 
-## Quickstart — Android / JVM (Kotlin)
+## Quickstart per target
+
+### Android
 
 ```kotlin
 val coordinator = LlmKit.initialize()
-
-// Browse and pick a model from the bundled curated manifest.
 val model = coordinator.registry.curated().first { it.id == "smollm2-135m-instruct-q8" }
 
-// Download it (Flow of progress events; safe to cancel).
-val handle: ModelHandle = coordinator.downloader.download(model)
-    .filterIsInstance<DownloadState.Completed>()
-    .first()
-    .handle
-
-// Load and generate.
-val session = coordinator.loadModel(handle, RuntimeConfig(contextSize = 2048))
-session.generate("The capital of France is", GenParams(maxTokens = 64)).collect { event ->
-    when (event) {
-        is TokenEvent.Token -> print(event.text)
-        is TokenEvent.Done  -> println("\n[${event.reason}, ${event.stats.tokensPerSecond} tok/s]")
-        is TokenEvent.Error -> println("\nError: ${event.cause.message}")
+// Stream download progress
+coordinator.downloader.download(model).collect { state ->
+    when (state) {
+        is DownloadState.Progress  -> showProgress(state.bytesDownloaded, state.totalBytes)
+        is DownloadState.Completed -> openChat(state.handle)
+        is DownloadState.Failed    -> showError(state.error.message)
+        DownloadState.Paused       -> Unit
     }
+}
+
+// Chat
+val session = coordinator.loadModel(handle, RuntimeConfig(contextSize = 2048))
+session.chat(
+    messages = listOf(
+        ChatMessage(ChatRole.System, "You are concise."),
+        ChatMessage(ChatRole.User, "Why is the sky blue?"),
+    ),
+).collect { event ->
+    if (event is TokenEvent.Token) print(event.text)
 }
 session.unload()
 ```
 
-## Quickstart — iOS (SwiftUI)
+### iOS (SwiftUI)
 
 ```swift
 let coordinator = try await LlmKit.shared.initialize(
     config: LlmKitConfig(maxConcurrentSessions: 1)
 )
 let models = try await coordinator.registry.curated() as? [ModelInfo] ?? []
-let model = models.first { $0.id == "smollm2-135m-instruct-q8" }!
+let model = models.first(where: { $0.id == "smollm2-135m-instruct-q8" })!
 
-let flow = coordinator.downloader.download(model: model)
-for await state in flow {
+for await state in coordinator.downloader.download(model: model) {
     switch onEnum(of: state) {
     case .progress(let p): print("\(p.bytesDownloaded)/\(p.totalBytes)")
-    case .completed(let c): /* load and generate */ break
-    case .failed(let f):   print(f.error.message ?? "")
+    case .completed: break
+    case .failed(let f): print(f.error.message ?? "")
     case .paused: break
     }
 }
@@ -75,44 +81,75 @@ for await state in flow {
 
 SwiftUI sample lives in [`samples-ios/`](samples-ios/) — generated via XcodeGen from `project.yml`.
 
+### JVM desktop (Compose)
+
+```bash
+./gradlew :samples-desktop:run
+```
+
+Material 3 sample with model picker, live download progress, and a streaming chat screen with cancel. macOS arm64 + x64 only in v0.0.3.
+
+### Kotlin/Native (macOS)
+
+`engine-llama` exposes `macosArm64` and `macosX64` targets producing klibs you can consume from a Kotlin/Native CLI:
+
+```kotlin
+// in your Native CLI's commonMain
+implementation("dev.koml:engine-llama:0.0.3")
+
+fun main() = runBlocking {
+    val coordinator = LlmKit.initialize()
+    val handle = coordinator.downloader.localModels().first()
+    val session = coordinator.loadModel(handle, RuntimeConfig(contextSize = 2048))
+    session.generate("Explain Kotlin coroutines in one paragraph.")
+        .collect { event ->
+            if (event is TokenEvent.Token) print(event.text)
+        }
+}
+```
+
+The macOS native target uses Metal acceleration (no b5460 embed bug here, only iOS hits that). Run `scripts/build-llama-macos-native.sh` once to produce `build/llama-macos-native/<arch>/lib/libkoml-llama.a` before linking.
+
 ## Repository layout
 
 ```
-:core               public API (interfaces, data classes, sealed classes, KomlException)
-:engine-llama       KMP engine: LlmKit, DefaultLlmSession, expect/actual LlamaNative
-:storage            platform-aware filesystem paths (Android filesDir, iOS Documents, JVM ~/.koml/)
+:core               Public API (interfaces, data classes, sealed classes, KomlException, ModelStorage)
+:engine-llama       KMP engine: LlmKit, DefaultLlmSession, expect/actual LlamaNative, chat templates
+:storage            Platform-aware filesystem paths (Android filesDir, iOS Documents, JVM ~/.koml/)
 :download           Ktor + Okio resumable downloads, SHA-256 verify, license gate
-:registry           bundled JSON manifest of 5 curated models
+:registry           Bundled JSON manifest of 5 curated models + HuggingFace Hub search
 :samples-android    Android sample (Views + lifecycleScope)
 :samples-desktop    Compose Desktop sample (macOS)
 samples-ios/        SwiftUI sample (XcodeGen project)
-scripts/            Build helpers (build-llama-ios.sh, build-llama-jvm.sh, refresh-manifest-shas.sh)
+scripts/            Build helpers (build-llama-ios.sh, build-llama-jvm.sh, build-llama-macos-native.sh, refresh-manifest-shas.sh)
 external/llama.cpp  Vendored as a git submodule, pinned to b5460
 docs/               Phase summaries, known issues, release notes
 ```
 
 ## Setup
 
-See [`docs/phase-2-summary.md`](docs/phase-2-summary.md) for the full bootstrap. TL;DR:
+See [`docs/phase-3-summary.md`](docs/phase-3-summary.md) for the full bootstrap. TL;DR:
 
 ```bash
 # One-time
 git submodule update --init --recursive
 brew install xcodegen cmake
 
-# iOS static libs (~10 min)
-./scripts/build-llama-ios.sh
+# Static libs (each ~10 min)
+./scripts/build-llama-ios.sh             # iOS arm64 + simulator
+./scripts/build-llama-jvm.sh             # macOS arm64 + x64 JNI dylibs
+./scripts/build-llama-macos-native.sh    # macOS arm64 + x64 Kotlin/Native cinterop
 
-# JVM macOS static libs (~10 min)
-./scripts/build-llama-jvm.sh
-
-# Refresh curated-manifest SHA-256s (downloads ~5 GB)
+# Real SHAs for the curated manifest (~30 min, ~5 GB)
 ./scripts/refresh-manifest-shas.sh
 
 # Build samples
 ./gradlew :samples-android:assembleDebug
 ./gradlew :engine-llama:assembleKomlEngineDebugXCFramework
-./gradlew :samples-desktop:run                                  # Compose Desktop
+./gradlew :samples-desktop:run
+
+# Tests
+./gradlew :download:jvmTest :engine-llama:jvmTest
 
 # iOS Xcode project
 cd samples-ios && xcodegen && open KomlSample.xcodeproj
@@ -125,8 +162,8 @@ cd samples-ios && xcodegen && open KomlSample.xcodeproj
 | 0 | JNI proof of concept (Android) | ✅ Done |
 | 1 | Full KMP engine, iOS bindings, streaming API | ✅ Done |
 | 2 | JVM desktop, registry, downloader, storage, license gate | ✅ Done |
-| 3 | Chat templates, HF search, native targets, polish | ⏳ Next |
-| 4 | Maven Central publishing, CI, contributing docs | ⏳ |
+| 3 | Chat templates, HF search, native targets, error+KDoc polish, tests | ✅ Done |
+| 4 | Maven Central publishing, CI, contributing docs | ⏳ Next |
 
 ## License
 

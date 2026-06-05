@@ -5,15 +5,36 @@ import dev.koml.core.download.ModelDownloader
 import dev.koml.core.model.ModelHandle
 import dev.koml.core.registry.ModelRegistry
 
+/**
+ * Top-level handle to the library's stateful machinery: model registry,
+ * downloader, and loaded-session pool. Construct via
+ * [dev.koml.engine.LlmKit.initialize].
+ *
+ * Coordinators are safe to use concurrently from any coroutine — all state
+ * is guarded internally.
+ */
 interface LlmCoordinator {
+
+    /** The registry behind this coordinator (curated list + HF search). */
     val registry: ModelRegistry
+
+    /** The downloader bound to this coordinator's storage + license gate. */
     val downloader: ModelDownloader
 
+    /**
+     * Loads a model and returns a session ready to generate. Throws
+     * [dev.koml.core.error.KomlException.ModelLoadException] when:
+     * - the underlying file at [ModelHandle.localPath] is missing or invalid,
+     * - the maximum concurrent session count
+     *   ([dev.koml.core.config.LlmKitConfig.maxConcurrentSessions]) has been
+     *   reached.
+     */
     suspend fun loadModel(
         handle: ModelHandle,
         runtime: RuntimeConfig = RuntimeConfig(),
     ): LlmSession
 
+    /** Snapshot of every currently-loaded session. */
     suspend fun activeSessions(): List<LlmSession>
 
     /**

@@ -12,7 +12,7 @@ import dev.koml.core.storage.ModelStorage
 import dev.koml.download.ModelDownloadStack
 import dev.koml.download.ModelDownloaderFactory
 import dev.koml.engine.LlamaNative
-import dev.koml.registry.DefaultModelRegistry
+import dev.koml.registry.DefaultModelRegistryFactory
 import dev.koml.storage.ModelStorageFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,7 +30,7 @@ internal class DefaultLlmCoordinator(
     private val sessions = mutableListOf<LlmSession>()
 
     private val storage: ModelStorage = ModelStorageFactory.create()
-    override val registry: ModelRegistry = DefaultModelRegistry()
+    override val registry: ModelRegistry = DefaultModelRegistryFactory.create()
     private val downloadStack: ModelDownloadStack =
         ModelDownloaderFactory.create(storage) { id -> registry.resolve(id) }
     override val downloader: ModelDownloader = downloadStack.downloader

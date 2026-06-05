@@ -74,6 +74,33 @@ kotlin {
         }
     }
 
+    // macOS native targets — same cinterop bindings as iOS (shared via appleMain),
+    // but a separate .def with Metal linkage since macOS doesn't have the b5460
+    // embed bug iOS does. Static libs come from scripts/build-llama-macos-native.sh.
+    val macosTargets = listOf(
+        macosArm64(),
+        macosX64(),
+    )
+
+    macosTargets.forEach { target ->
+        target.compilations.getByName("main") {
+            cinterops.create("llama") {
+                defFile(project.file("src/nativeInterop/cinterop/llama-macos.def"))
+                packageName("dev.koml.engine.native")
+                includeDirs(rootProject.file("external/llama.cpp/include"))
+                includeDirs(rootProject.file("external/llama.cpp/ggml/include"))
+
+                val archDir = when (target.name) {
+                    "macosArm64" -> "macos-arm64"
+                    "macosX64" -> "macos-x64"
+                    else -> error("Unsupported macOS target: ${target.name}")
+                }
+                val libDir = rootProject.file("build/llama-macos-native/$archDir/lib")
+                extraOpts("-libraryPath", libDir.absolutePath)
+            }
+        }
+    }
+
     sourceSets {
         commonMain.dependencies {
             api(project(":core"))
@@ -84,6 +111,12 @@ kotlin {
         }
         named("jvmMain") {
             resources.srcDir(collectJvmNativeLibs.map { it.destinationDir })
+        }
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+            }
         }
     }
 }

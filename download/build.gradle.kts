@@ -17,6 +17,8 @@ kotlin {
         iosArm64(),
         iosSimulatorArm64(),
         iosX64(),
+        macosArm64(),
+        macosX64(),
     )
 
     sourceSets {
@@ -35,6 +37,14 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+        }
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.mock)
+                implementation(libs.okio.fakefilesystem)
+            }
         }
     }
 }

@@ -94,11 +94,19 @@ The `:registry` module's `CuratedModels.list` has placeholder SHA-256 strings fo
 ```
 to download each GGUF, compute the real SHA-256 and byte size, and print a paste-ready diff for `CuratedModels.kt`. Must be re-run whenever a model file on HuggingFace gets re-quantized.
 
-## 9. No `chat()` yet
+## 9. ~~No `chat()` yet~~ (RESOLVED in v0.0.3)
 
-**Status:** Phase 3.
+`session.chat(messages)` now picks the right template from `ModelInfo.promptTemplate` and renders the prompt. Five `ChatTemplate` data objects in `engine-llama/src/commonMain/kotlin/dev/koml/engine/chat/`: None, ChatML, Llama3, Phi3, Gemma. Stop sequences are merged automatically.
 
-`DefaultLlmSession.chat(...)` throws `NotImplementedError`. Use `generate()` with a manually-formatted prompt that matches your model's template until chat templates land in Phase 3.
+## 9a. HF search results aren't directly downloadable
+
+**Status:** intentional v0.0.3 design; revisit when adding an opt-in `withFileDetails` flag.
+
+`coordinator.registry.searchHuggingFace(query)` returns `ModelInfo` objects with blank `downloadUrl` and `sha256`. The HF Hub API doesn't include per-file metadata in the list-models response — each result would need an additional `GET /api/models/<id>` call to fetch the file list. We deliberately skip that to avoid making one search into ~20 API hits.
+
+**Workaround:** if you want to download a search hit, supplement the `ModelInfo` yourself before passing to `coordinator.downloader.download(...)`. The KDoc on `ModelRegistry.searchHuggingFace` describes the contract.
+
+**Plan:** v0.0.4+ may add `searchHuggingFace(query, withFileDetails = true)` that fans out per result. Off by default to keep the cheap path cheap.
 
 ## 10. Configuration cache not enabled
 
