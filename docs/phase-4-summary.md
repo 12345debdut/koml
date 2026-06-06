@@ -9,7 +9,7 @@ Get Koml ready to publish on Maven Central and operate as a real open-source pro
 - ✅ `CODE_OF_CONDUCT.md` referencing Contributor Covenant 2.1.
 - ✅ `CONTRIBUTING.md` with dev setup, conventions, PR process.
 - ✅ `docs/VERSIONING.md` documenting the pre-1.0 SemVer carve-out and the 1.0 freeze policy.
-- ✅ Maven Central publishing wired via `com.gradleup.nmcp` + Gradle `maven-publish` + `signing`. `./gradlew publishToCentralPortal` stages a bundle to the new Sonatype Central Portal.
+- ✅ Maven Central publishing wired via `com.gradleup.nmcp` + Gradle `maven-publish` + `signing`. `./gradlew publishAggregationToCentralPortal` stages a bundle to the new Sonatype Central Portal.
 - ✅ `docs/PUBLISHING.md` walks the maintainer through the release flow.
 - ✅ GitHub Actions CI: `.github/workflows/ci.yml` runs JVM build + tests on Ubuntu and macOS for every PR, plus a separate Android-Kotlin compile job.
 - ✅ Issue templates (`bug_report`, `feature_request`, `model_request`) + PR template.
@@ -127,7 +127,7 @@ ls ~/.m2/repository/dev/koml/                   # expect: core, storage, downloa
 - **Linux x64 JVM JNI + Kotlin/Native** not shipped (build-from-source path documented; can be added without a major version bump since it's purely additive).
 - **CI doesn't run iOS framework build** — caught by maintainer's local build before publishing. Adding it would 10x the macOS-runner minutes cost.
 - **CI doesn't run macOS native target build** — same reason. Local maintainer verification before each release.
-- **CI doesn't publish** — release is a manual `./gradlew publishToCentralPortal` from a maintainer's machine. CI-driven publishing on tag push is a Phase 5 stretch.
+- **CI doesn't publish** — release is a manual `./gradlew publishAggregationToCentralPortal` from a maintainer's machine. CI-driven publishing on tag push is a Phase 5 stretch.
 
 ## Commit message
 
@@ -158,7 +158,7 @@ Maven Central publishing
   library modules only; per-publication POM (name, description,
   URL, license, developer, SCM, issue tracker); in-memory PGP
   signing reading from gradle.properties or env vars; nmcp
-  aggregation uploads all five bundles via publishToCentralPortal
+  aggregation uploads all five bundles via publishAggregationToCentralPortal
   with USER_MANAGED publishing so a human clicks Publish at
   central.sonatype.com.
 - docs/PUBLISHING.md walks maintainers through one-time setup

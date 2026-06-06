@@ -2,9 +2,22 @@
 
 Non-blocking gotchas, workarounds in place, and the plan for each. Update this file whenever a fix lands or a new known issue surfaces.
 
-## 1. Metal disabled on iOS
+## 1. Metal disabled on iOS, macOS JVM, and macOS Kotlin/Native
 
-**Status:** deferred until the next llama.cpp version bump (which is a minor-version event per [VERSIONING.md](VERSIONING.md)). v0.0.x ships with CPU-only iOS — that's the supported configuration.
+**Status:** deferred until the next llama.cpp version bump (which is a minor-version event per [VERSIONING.md](VERSIONING.md)).
+
+**Symptom (now confirmed on macOS too, not just iOS):**
+```
+ggml_metal_init: error: metal library is nil
+ggml_backend_metal_device_init: error: failed to allocate context
+llama_init_from_model: failed to initialize the context: failed to initialize Metal backend
+```
+
+The Metal shader source compiled into the b5460 binary references types like `ggml_metal_kargs_pool_2d` that aren't defined in the embed payload. We initially thought this was iOS-specific; v0.0.5 reproducing it on macOS JVM on an M3 host revealed it's a general b5460 issue.
+
+**Workaround:** all three build scripts (`build-llama-ios.sh`, `build-llama-jvm.sh`, `build-llama-macos-native.sh`) pass `-DGGML_METAL=OFF -DGGML_ACCELERATE=ON`. CPU + Accelerate is still fast — under 1 tok/s slower than Metal on the small models we ship.
+
+v0.0.x supported configuration is **CPU-only on all Apple targets**.
 
 **Symptom:** With `GGML_METAL=ON` + `GGML_METAL_EMBED_LIBRARY=ON` at llama.cpp **b5460**, the embedded Metal shader fails at runtime with:
 
@@ -107,6 +120,31 @@ to download each GGUF, compute the real SHA-256 and byte size, and print a paste
 **Workaround:** if you want to download a search hit, supplement the `ModelInfo` yourself before passing to `coordinator.downloader.download(...)`. The KDoc on `ModelRegistry.searchHuggingFace` describes the contract.
 
 **Plan:** v0.0.4+ may add `searchHuggingFace(query, withFileDetails = true)` that fans out per result. Off by default to keep the cheap path cheap.
+
+## 11. GPG signing under parallel Gradle: "Cannot allocate memory"
+
+**Status:** resolved via a serialising build service in root `build.gradle.kts`.
+
+**Symptom:** During `publishAggregationToCentralPortal`, randomly-distributed signing tasks fail with:
+```
+gpg: signing failed: Cannot allocate memory
+```
+
+**Root cause:** Gradle launches ~35 signing tasks in parallel (5 modules × 7 publications). They all hit gpg-agent's secure memory pool at once and it runs out.
+
+**Fix:** Root `build.gradle.kts` registers a `SerialSigningService` as a shared build service with `maxParallelUsages = 1`, and configures every `Sign` task to use it. Signing tasks serialise; everything else still parallelises.
+
+**Workaround if you ever hit it again:** `./gradlew ... --no-parallel --max-workers=1` forces serialisation across the whole build.
+
+## 10a. llama.cpp + Apple Silicon M3+ host: GGML_NATIVE auto-detection trips compiler
+
+**Status:** workaround in place across all three build scripts.
+
+**Symptom:** On a recent Apple Silicon host (M3, M4) the llama.cpp build emits `error: unknown target CPU 'apple-m3'`. GGML auto-detects the host CPU and asks the compiler to target it, but `apple-m3` isn't yet in AppleClang's supported list.
+
+**Fix:** All three `scripts/build-llama-*.sh` pass `-DGGML_NATIVE=OFF`. Generic arm64 is used instead of the host-specific tuning. Sub-1% perf cost on small models; doesn't bite at all on JVM JNI / Kotlin/Native targets where llama.cpp picks runtime-dispatch paths via Accelerate anyway.
+
+**Also affected:** the JVM JNI CMakeLists was missing `${LLAMA_CPP_DIR}/ggml/include` (the Android `add_subdirectory()` path picks it up transitively from llama.cpp's own CMakeLists, but our out-of-tree configure does not). Fixed.
 
 ## 10. ~~Configuration cache not enabled~~ (RESOLVED in v0.0.4)
 

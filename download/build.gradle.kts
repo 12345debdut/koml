@@ -10,6 +10,10 @@ kotlin {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
+    // Make sure appleMain/iosMain/macosMain are materialised so the
+    // appleMain HttpClientFactory.kt sees shared deps.
+    applyDefaultHierarchyTemplate()
+
     androidTarget()
     jvm()
 
@@ -35,17 +39,14 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.ktor.client.okhttp)
         }
-        // Darwin engine: needed on every Apple target. The intermediate
-        // appleMain / macosMain source sets aren't named in this hierarchy,
-        // so we attach to each declared leaf directly.
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-        }
-        named("macosArm64Main") {
-            dependencies { implementation(libs.ktor.client.darwin) }
-        }
-        named("macosX64Main") {
-            dependencies { implementation(libs.ktor.client.darwin) }
+        // Darwin engine on appleMain — the HttpClientFactory.kt actual lives
+        // there (shared between ios + macos). `by getting` is lazy so it
+        // resolves at task-evaluation time after the default hierarchy has
+        // materialised the source set.
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
         }
         named("commonTest") {
             dependencies {

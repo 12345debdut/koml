@@ -103,7 +103,7 @@ Material 3 sample with model picker, live download progress, and a streaming cha
 
 ```kotlin
 // in your Native CLI's commonMain
-implementation("dev.koml:engine-llama:0.0.3")
+implementation("io.github.12345debdut:engine-llama:0.0.3")
 
 fun main() = runBlocking {
     val coordinator = LlmKit.initialize()

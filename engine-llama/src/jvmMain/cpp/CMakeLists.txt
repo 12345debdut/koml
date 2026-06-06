@@ -14,7 +14,15 @@ if(NOT DEFINED LLAMA_LIB_DIR)
 endif()
 
 find_package(JNI REQUIRED)
-include_directories(${JNI_INCLUDE_DIRS} ${LLAMA_CPP_DIR}/include)
+# llama.h #include "ggml.h" which lives under ggml/include, not the top-level
+# include/ — both directories need to be on the search path. The Android
+# add_subdirectory() path picks up ggml/include transitively from llama.cpp's
+# own CMakeLists; here we configure llama.cpp out-of-tree so we add it manually.
+include_directories(
+    ${JNI_INCLUDE_DIRS}
+    ${LLAMA_CPP_DIR}/include
+    ${LLAMA_CPP_DIR}/ggml/include
+)
 
 add_library(koml-jni SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../cpp/koml_jni.cpp
@@ -34,8 +42,9 @@ target_link_libraries(koml-jni PRIVATE
     ${LLAMA_STATIC_LIBS}
     "-framework Foundation"
     "-framework Accelerate"
-    "-framework Metal"
-    "-framework MetalKit"
+    # Metal/MetalKit removed — disabled at the llama.cpp build level due to the
+    # b5460 ggml-common embed bug that we already work around on iOS. macOS
+    # JVM gets CPU + Accelerate acceleration which is still very fast.
 )
 
 target_compile_features(koml-jni PRIVATE cxx_std_17)

@@ -89,7 +89,7 @@ All three must be green. If iOS XCFramework fails, the published artifact won't 
 ### 6. Stage to Central Portal
 
 ```bash
-./gradlew publishToCentralPortal
+./gradlew publishAggregationToCentralPortal
 ```
 
 This:

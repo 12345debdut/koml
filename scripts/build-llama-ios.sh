@@ -40,6 +40,7 @@ build_arch() {
         -DLLAMA_BUILD_TOOLS=OFF \
         -DLLAMA_BUILD_COMMON=OFF \
         -DLLAMA_CURL=OFF \
+        -DGGML_NATIVE=OFF \
         -DGGML_METAL=OFF \
         -DGGML_ACCELERATE=ON \
         -DGGML_BLAS=OFF

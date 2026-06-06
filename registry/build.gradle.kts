@@ -11,6 +11,10 @@ kotlin {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
+    // appleMain HttpClientFactory.kt needs the intermediate source set
+    // materialised so we can attach the Ktor-Darwin dep to it.
+    applyDefaultHierarchyTemplate()
+
     androidTarget()
     jvm()
 
@@ -37,15 +41,11 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.ktor.client.okhttp)
         }
-        // Darwin engine on every Apple target — see :download notes.
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-        }
-        named("macosArm64Main") {
-            dependencies { implementation(libs.ktor.client.darwin) }
-        }
-        named("macosX64Main") {
-            dependencies { implementation(libs.ktor.client.darwin) }
+        // Darwin engine on appleMain — see :download for the rationale.
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
         }
     }
 }

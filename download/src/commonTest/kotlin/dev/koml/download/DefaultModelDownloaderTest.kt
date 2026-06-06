@@ -120,7 +120,10 @@ class DefaultModelDownloaderTest {
         }
         // Pre-seed the final file with valid bytes.
         fs.createDirectories("/test/models".toPath())
-        fs.sink("/test/models/test-model.gguf".toPath()).buffer().use { it.write(payload) }
+        // Okio's BufferedSink.use { } lambda is JVM/Android-only because
+        // commonTest is shared with iOS/macOS native targets — use try/finally.
+        val seed = fs.sink("/test/models/test-model.gguf".toPath()).buffer()
+        try { seed.write(payload) } finally { seed.close() }
 
         val states = downloader.download(testModel).toList()
         assertEquals(1, states.size)
