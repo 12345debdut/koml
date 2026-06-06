@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koml — On-device LLM inference for Kotlin Multiplatform</title>
+<meta name="description" content="Koml is a Kotlin Multiplatform library wrapping llama.cpp for on-device LLM inference on Android, iOS, JVM desktop, and macOS native — with coroutines and Flow on the surface and GGUF underneath.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🪂%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Koml — On-device LLM inference for Kotlin Multiplatform">
+<meta property="og:description" content="A thin, idiomatic Kotlin wrapper over llama.cpp. Coroutines and Flow on the surface, GGUF underneath. Android, iOS, JVM desktop, macOS native.">
+<meta property="og:type" content="website">
+</head>
+<body>
+
+<header>
+    <nav>
+        <a class="brand" href="#top">Koml<span class="brand-sub">v0.0.5</span></a>
+        <ul>
+            <li><a href="#install">Install</a></li>
+            <li><a href="#quickstart">Quickstart</a></li>
+            <li><a href="#platforms">Platforms</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="api/">API reference</a></li>
+            <li><a href="https://github.com/12345debdut/koml">GitHub</a></li>
+        </ul>
+    </nav>
+</header>
+
+<div class="container" id="top">
+
+    <!-- HERO -->
+    <section class="hero" style="border-top:none">
+        <h1>Koml</h1>
+        <p class="tag">
+            On-device LLM inference for Kotlin Multiplatform.
+            A thin, idiomatic wrapper over
+            <a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a>.
+            Coroutines and Flow on the surface, GGUF underneath.
+            Same code runs on Android, iOS, JVM desktop, and macOS native.
+        </p>
+        <div class="badges">
+            <a href="https://github.com/12345debdut/koml/actions/workflows/ci.yml">
+                <img src="https://github.com/12345debdut/koml/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI">
+            </a>
+            <a href="https://central.sonatype.com/artifact/io.github.12345debdut/engine-llama">
+                <img src="https://img.shields.io/maven-central/v/io.github.12345debdut/engine-llama?label=Maven%20Central" alt="Maven Central">
+            </a>
+            <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License">
+            <img src="https://img.shields.io/badge/kotlin-2.2.10-blue.svg?logo=kotlin" alt="Kotlin">
+        </div>
+        <div class="cta-row">
+            <a class="cta" href="#quickstart">Get started →</a>
+            <a class="cta secondary" href="api/">Browse the API ↗</a>
+        </div>
+    </section>
+
+    <!-- WHY -->
+    <section id="why">
+        <h2>Why Koml</h2>
+        <p>
+            <strong>llama.cpp</strong> already solves the hard part — loading quantised
+            transformers from GGUF, doing the math fast, managing the KV cache. What's been
+            missing is a <em>Kotlin-shaped seam</em> over it: one that feels native to the
+            idioms Kotlin developers already use, doesn't leak C-level abstractions, and works
+            the same way on every target without per-platform forking.
+        </p>
+        <p>That's what Koml is.</p>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>Flow&lt;TokenEvent&gt; streaming</h3>
+                <p>Cancel the collecting coroutine and generation stops at the next sampling iteration. No threads to manage.</p>
+            </div>
+            <div class="feature-card">
+                <h3>One API, four targets</h3>
+                <p>Identical entry point on Android, iOS, JVM desktop, and macOS native.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Curated model registry</h3>
+                <p>Five vetted ungated GGUF models bundled in. Hugging Face Hub search for everything else.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Resumable downloads</h3>
+                <p>SHA-256 verify-as-you-write, atomic rename on success, HTTP Range resume across process restarts.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Per-family chat templates</h3>
+                <p>ChatML, Llama 3, Phi-3, Gemma — each rendered from the spec on its HuggingFace card.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Boring and correct</h3>
+                <p>Sealed errors, default-impl interface methods for backward compat, KDoc on every public type.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section id="install">
+        <h2>Install</h2>
+        <p>One line in your <code>build.gradle.kts</code>:</p>
+<pre><code>dependencies {
+    implementation("io.github.12345debdut:engine-llama:0.0.5")
+}</code></pre>
+        <p>
+            The <code>engine-llama</code> artifact transitively pulls in <code>:core</code>,
+            <code>:storage</code>, <code>:download</code>, and <code>:registry</code> — one
+            dependency line is the whole library.
+        </p>
+
+        <h3>Kotlin Multiplatform consumer</h3>
+<pre><code>kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("io.github.12345debdut:engine-llama:0.0.5")
+        }
+    }
+}</code></pre>
+        <p>
+            KMP auto-resolves to the per-target artifact
+            (<code>engine-llama-jvm</code>, <code>engine-llama-iosarm64</code>,
+            <code>engine-llama-macosarm64</code>, etc.) at link time.
+        </p>
+
+        <h3>iOS (Swift) via XCFramework</h3>
+        <p>
+            v0.0.5 doesn't ship CocoaPods or SPM yet — use the XCFramework directly.
+            See the <a href="https://github.com/12345debdut/koml/tree/main/samples-ios">SwiftUI sample</a>
+            for the Xcode setup walkthrough (XcodeGen-based).
+        </p>
+    </section>
+
+    <!-- QUICKSTART -->
+    <section id="quickstart">
+        <h2>Quickstart</h2>
+        <p>End-to-end on any target — Android, JVM, macOS Native — the code is identical:</p>
+<pre><code>import dev.koml.engine.LlmKit
+import dev.koml.core.config.RuntimeConfig
+import dev.koml.core.download.DownloadState
+import dev.koml.core.session.*
+import kotlinx.coroutines.flow.*
+
+suspend fun runIt() {
+    // 1. Wire up the coordinator (storage, registry, downloader, license gate).
+    val coordinator = LlmKit.initialize()
+
+    // 2. Pick a model from the bundled curated registry.
+    val model = coordinator.registry.curated()
+        .first { it.id == "smollm2-135m-instruct-q8" }
+
+    // 3. Download (resumable, SHA-256 verified, ~145 MB for SmolLM2-135M).
+    val handle = coordinator.downloader.download(model)
+        .onEach { state ->
+            if (state is DownloadState.Progress) {
+                println("${state.bytesDownloaded} / ${state.totalBytes}")
+            }
+        }
+        .filterIsInstance&lt;DownloadState.Completed&gt;()
+        .first()
+        .handle
+
+    // 4. Load the model.
+    val session = coordinator.loadModel(handle, RuntimeConfig(contextSize = 2048))
+
+    // 5. Stream tokens. session.chat() picks the right template from the
+    //    model (here: ChatML for SmolLM2). session.generate() takes a raw
+    //    prompt if you don't want template formatting.
+    session.chat(
+        listOf(
+            ChatMessage(ChatRole.System, "You are concise. One-sentence answers."),
+            ChatMessage(ChatRole.User, "Why is the sky blue?"),
+        ),
+        GenParams(maxTokens = 128),
+    ).collect { event -&gt;
+        when (event) {
+            is TokenEvent.Token -&gt; print(event.text)
+            is TokenEvent.Done  -&gt; println(
+                "\n[${event.reason}, ${event.stats.generatedTokens} tokens, " +
+                "%.1f tok/s]".format(event.stats.tokensPerSecond)
+            )
+            is TokenEvent.Error -&gt; println("\nError: ${event.cause.message}")
+        }
+    }
+
+    // 6. Release the native model + context.
+    session.unload()
+}</code></pre>
+        <p>
+            Cancellation is automatic via Flow — drop the collecting coroutine and
+            generation stops at the next iteration.
+        </p>
+    </section>
+
+    <!-- PLATFORMS -->
+    <section id="platforms">
+        <h2>Platform support</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Target</th>
+                    <th>Status</th>
+                    <th>Acceleration</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Android</strong> arm64-v8a</td><td>✅ Production-ready</td><td>CPU</td></tr>
+                <tr><td><strong>iOS</strong> arm64 device + simulator</td><td>✅ Production-ready</td><td>CPU + Accelerate</td></tr>
+                <tr><td><strong>iOS</strong> x86_64 simulator</td><td>✅ Production-ready</td><td>CPU</td></tr>
+                <tr><td><strong>JVM desktop</strong> macOS arm64</td><td>✅ Production-ready</td><td>CPU + Accelerate</td></tr>
+                <tr><td><strong>JVM desktop</strong> macOS x64</td><td>✅ Production-ready</td><td>CPU + Accelerate</td></tr>
+                <tr><td><strong>Kotlin/Native</strong> macOS arm64</td><td>✅ Production-ready</td><td>CPU + Accelerate</td></tr>
+                <tr><td><strong>Kotlin/Native</strong> macOS x64</td><td>✅ Production-ready</td><td>CPU + Accelerate</td></tr>
+                <tr><td>JVM desktop (Linux, Windows)</td><td>⏳ Build from source</td><td>—</td></tr>
+                <tr><td>Kotlin/Native (Linux)</td><td>⏳ Post-1.0</td><td>—</td></tr>
+                <tr><td>Android (other ABIs)</td><td>⏳ Post-1.0</td><td>—</td></tr>
+            </tbody>
+        </table>
+        <div class="callout">
+            <strong>Note on Metal:</strong> Metal acceleration is currently disabled on all
+            Apple targets due to an upstream b5460 embed bug. CPU + Accelerate is still very
+            fast for the small models shipped in the curated registry; expect ~10–40 tok/s
+            for SmolLM2-135M on Apple Silicon. Metal returns in v0.1.0 alongside a llama.cpp
+            version bump.
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features">
+        <h2>Features by version</h2>
+        <table>
+            <thead><tr><th>Feature</th><th>Since</th></tr></thead>
+            <tbody>
+                <tr><td>Flow-based streaming generation</td><td>v0.0.1</td></tr>
+                <tr><td>Per-session single-threaded dispatcher</td><td>v0.0.1</td></tr>
+                <tr><td>Cancellation via Flow / Task.cancel()</td><td>v0.0.1</td></tr>
+                <tr><td>Stop-sequence detection</td><td>v0.0.1 (edge-case tested v0.0.5)</td></tr>
+                <tr><td>Model download with resume + SHA-256 verify</td><td>v0.0.2</td></tr>
+                <tr><td>Curated model registry (5 ungated models)</td><td>v0.0.2</td></tr>
+                <tr><td>License acceptance gate</td><td>v0.0.2</td></tr>
+                <tr><td>Platform-aware storage</td><td>v0.0.2</td></tr>
+                <tr><td>Chat templates: ChatML, Llama 3, Phi-3, Gemma</td><td>v0.0.3</td></tr>
+                <tr><td>Hugging Face Hub search (metadata)</td><td>v0.0.3</td></tr>
+                <tr><td>Hugging Face Hub search with file details</td><td>v0.0.5</td></tr>
+                <tr><td>Integration tests (MockEngine + FakeFileSystem)</td><td>v0.0.3</td></tr>
+                <tr><td>Real-GGUF end-to-end JVM test (opt-in)</td><td>v0.0.5</td></tr>
+                <tr><td>Dokka HTML API reference</td><td>v0.0.5</td></tr>
+                <tr><td>Maven Central publishing</td><td>v0.0.5</td></tr>
+                <tr><td>CI-driven publishing on v* tag push</td><td>v0.0.5</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- CURATED MODELS -->
+    <section id="models">
+        <h2>Curated models</h2>
+        <p>
+            <code>coordinator.registry.curated()</code> returns five vetted, ungated,
+            permissively-licensed models ready to download:
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Size</th>
+                    <th>License</th>
+                    <th>Context</th>
+                    <th>RAM</th>
+                    <th>Template</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>smollm2-135m-instruct-q8</code></td><td>~145 MB</td><td>Apache-2.0</td><td>2 048</td><td>256 MB</td><td>ChatML</td></tr>
+                <tr><td><code>smollm2-1.7b-instruct-q4km</code></td><td>~1.0 GB</td><td>Apache-2.0</td><td>2 048</td><td>1.5 GB</td><td>ChatML</td></tr>
+                <tr><td><code>tinyllama-1.1b-chat-q4km</code></td><td>~668 MB</td><td>Apache-2.0</td><td>2 048</td><td>1.0 GB</td><td>ChatML</td></tr>
+                <tr><td><code>phi-3-mini-4k-instruct-q4</code></td><td>~2.4 GB</td><td>MIT</td><td>4 096</td><td>3.0 GB</td><td>Phi-3</td></tr>
+                <tr><td><code>qwen2.5-1.5b-instruct-q4km</code></td><td>~986 MB</td><td>Apache-2.0</td><td>32 768</td><td>1.5 GB</td><td>ChatML</td></tr>
+            </tbody>
+        </table>
+        <p>For anything else, search HuggingFace:</p>
+<pre><code>// Cheap: metadata only (~1 API call)
+val results = coordinator.registry.searchHuggingFace("smollm2")
+
+// Pricier but each result is directly downloadable
+// (~N+1 API calls — one per result to fetch its file list and SHA-256)
+val downloadable = coordinator.registry.searchHuggingFaceWithDetails("smollm2")</code></pre>
+    </section>
+
+    <!-- TROUBLESHOOTING -->
+    <section id="troubleshooting">
+        <h2>Troubleshooting</h2>
+
+        <h3>Build fails with "ggml.h not found" or "unknown target CPU 'apple-m3'"</h3>
+        <p>
+            On a recent Apple Silicon host (M3, M4) llama.cpp's auto-CPU-detection asks
+            AppleClang to target a CPU it doesn't yet recognise. All three Koml build
+            scripts pass <code>-DGGML_NATIVE=OFF</code> to disable auto-detection and use
+            a generic arm64 target instead.
+        </p>
+
+        <h3>Metal shader fails at runtime with "block_q4_0 not declared"</h3>
+        <p>
+            This is the b5460 ggml-common embed bug. All Apple targets in v0.0.x ship
+            with Metal disabled (CPU + Accelerate only). Returns in v0.1.0 with a
+            llama.cpp version bump.
+        </p>
+
+        <h3>HF download fails with "SHA-256 mismatch"</h3>
+        <p>
+            HuggingFace re-quantised the file you're downloading. Run
+            <code>./scripts/refresh-manifest-shas.sh</code> from a clone of this repo
+            (or update the SHA-256 in your own consumer code).
+        </p>
+
+        <h3>Generation throws "Decode failed (context window exceeded)"</h3>
+        <p>
+            Your prompt + history is longer than the model's <code>contextWindow</code>.
+            Either truncate older messages or load with a larger
+            <code>RuntimeConfig.contextSize</code> (capped at <code>ModelInfo.contextWindow</code>).
+        </p>
+
+        <p>
+            Full live list at
+            <a href="https://github.com/12345debdut/koml/blob/main/docs/known-issues.md">docs/known-issues.md</a>.
+        </p>
+    </section>
+
+    <!-- API + LINKS -->
+    <section id="learn-more">
+        <h2>Learn more</h2>
+        <ul>
+            <li><a href="api/"><strong>API reference</strong></a> — full Dokka-generated KDoc for every public type</li>
+            <li><a href="https://github.com/12345debdut/koml">GitHub repo</a> — source, issues, discussions</li>
+            <li><a href="https://github.com/12345debdut/koml/tree/main/docs">Phase summaries</a> — the journey from JNI PoC to v0.0.5</li>
+            <li><a href="https://github.com/12345debdut/koml/blob/main/docs/VERSIONING.md">Versioning policy</a> — what 0.0.x means, what 1.0 will lock</li>
+            <li><a href="https://github.com/12345debdut/koml/blob/main/docs/PUBLISHING.md">Publishing flow</a> — for maintainers</li>
+            <li><a href="https://central.sonatype.com/artifact/io.github.12345debdut/engine-llama">Maven Central</a> — coordinates, dependency tree</li>
+        </ul>
+    </section>
+
+</div>
+
+<footer>
+    <div class="container">
+        <p>
+            <a href="https://github.com/12345debdut/koml">@12345debdut/koml</a> · Apache License 2.0 · llama.cpp is MIT-licensed and vendored as a submodule.
+        </p>
+        <p style="margin-top:0.4rem">
+            Site auto-deployed from <code>docs-site/</code> + Dokka via GitHub Actions.
+        </p>
+    </div>
+</footer>
+
+</body>
+</html>

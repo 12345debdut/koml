@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://12345debdut.github.io/koml/sitemap.xml

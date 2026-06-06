@@ -1,4 +1,4 @@
-name: Publish Dokka site
+name: Publish docs site
 
 on:
   push:
@@ -8,6 +8,8 @@ on:
       - 'storage/src/**/*.kt'
       - 'download/src/**/*.kt'
       - 'registry/src/**/*.kt'
+      - 'engine-llama/src/**/*.kt'
+      - 'docs-site/**'
       - 'build.gradle.kts'
       - 'gradle/libs.versions.toml'
       - '.github/workflows/docs.yml'
@@ -24,29 +26,55 @@ concurrency:
 
 jobs:
   build-site:
+    name: Build site (landing + Dokka)
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (with llama.cpp submodule)
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 1
-      - uses: actions/setup-java@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Set up Gradle (with build cache)
+        uses: gradle/actions/setup-gradle@v3
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
-      - name: Generate Dokka HTML
+      - name: Generate Dokka HTML (multi-module)
         run: ./gradlew dokkaHtmlMultiModule --no-daemon --stacktrace
+
+      - name: Assemble Pages artifact
+        run: |
+          set -euo pipefail
+          STAGE=_pages_artifact
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          # 1) Copy the hand-written landing page (HTML + CSS + assets) to the root.
+          cp -R docs-site/. "$STAGE/"
+          # 2) Put the Dokka API reference under /api/.
+          mkdir -p "$STAGE/api"
+          cp -R build/dokka/htmlMultiModule/. "$STAGE/api/"
+          # 3) Bypass Jekyll on GitHub Pages — we ship pre-rendered HTML.
+          touch "$STAGE/.nojekyll"
+          echo "Pages artifact assembled:"
+          ls -la "$STAGE/"
+          echo "Top-level files:"
+          find "$STAGE" -maxdepth 2 -type f | head -30
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/dokka/htmlMultiModule
+          path: _pages_artifact
 
   deploy:
+    name: Deploy to GitHub Pages
     needs: build-site
     runs-on: ubuntu-latest
     environment:
