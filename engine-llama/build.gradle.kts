@@ -118,6 +118,13 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
             }
         }
+        named("jvmTest") {
+            dependencies {
+                // JUnit 4 for org.junit.Assume.assumeTrue — gates the
+                // network-bound JvmEndToEndTest behind KOML_INTEGRATION_TESTS=1.
+                implementation("junit:junit:4.13.2")
+            }
+        }
     }
 }
 

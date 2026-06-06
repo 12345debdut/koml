@@ -68,7 +68,7 @@ internal class DefaultLlmSession(
         val promptEvalMs = promptMark.elapsedNow().inWholeMilliseconds
         val generateMark = TimeSource.Monotonic.markNow()
 
-        val stopBuffer = StringBuilder()
+        val stopDetector = StopSequenceDetector(params.stopSequences, MAX_STOP_BUFFER)
         var generated = 0
         var finishReason = FinishReason.MaxTokensReached
 
@@ -83,10 +83,7 @@ internal class DefaultLlmSession(
             }
 
             val piece = native.tokenToPiece(modelPtr, token)
-            stopBuffer.append(piece)
-
-            val matchedStop = params.stopSequences.firstOrNull { stopBuffer.endsWith(it) }
-            if (matchedStop != null) {
+            if (stopDetector.append(piece) != null) {
                 finishReason = FinishReason.StopSequence
                 break
             }
@@ -100,10 +97,6 @@ internal class DefaultLlmSession(
                         "context window ($contextWindow) likely exceeded.",
                 )))
                 return@flow
-            }
-
-            if (stopBuffer.length > MAX_STOP_BUFFER) {
-                stopBuffer.deleteRange(0, stopBuffer.length - MAX_STOP_BUFFER)
             }
         }
 

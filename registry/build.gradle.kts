@@ -37,8 +37,15 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.ktor.client.okhttp)
         }
+        // Darwin engine on every Apple target — see :download notes.
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+        }
+        named("macosArm64Main") {
+            dependencies { implementation(libs.ktor.client.darwin) }
+        }
+        named("macosX64Main") {
+            dependencies { implementation(libs.ktor.client.darwin) }
         }
     }
 }

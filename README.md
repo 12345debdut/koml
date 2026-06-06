@@ -30,8 +30,12 @@ On-device LLM inference for Kotlin Multiplatform — a thin, idiomatic Kotlin wr
 | License acceptance gate | ✅ |
 | Platform-aware storage (`:storage`) | ✅ |
 | Chat templates (chatml, llama3, phi3, gemma) | ✅ (v0.0.3) |
-| Hugging Face Hub search | ✅ (v0.0.3, metadata-only) |
+| Hugging Face Hub search (metadata-only) | ✅ (v0.0.3) |
+| Hugging Face Hub search with file details | ✅ (v0.0.5) |
 | Integration tests (MockEngine + FakeFileSystem) | ✅ (v0.0.3) |
+| Real-GGUF end-to-end JVM test (opt-in) | ✅ (v0.0.5) |
+| Dokka HTML docs site | ✅ (v0.0.5) |
+| CI-driven publishing on `v*` tag push | ✅ (v0.0.5) |
 
 ## Quickstart per target
 
@@ -168,6 +172,7 @@ cd samples-ios && xcodegen && open KomlSample.xcodeproj
 | 2 | JVM desktop, registry, downloader, storage, license gate | ✅ Done |
 | 3 | Chat templates, HF search, native targets, error+KDoc polish, tests | ✅ Done |
 | 4 | Maven Central publishing, CI, contributing docs | ✅ Done |
+| 4.5 | Pre-1.0 polish: HF withFileDetails, Dokka, stop-seq tests, integration test, CI publish | ✅ Done (v0.0.5) |
 | — | First Central publish + community-driven iteration | ⏳ Next |
 
 ## License

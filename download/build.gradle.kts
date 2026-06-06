@@ -35,8 +35,17 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.ktor.client.okhttp)
         }
+        // Darwin engine: needed on every Apple target. The intermediate
+        // appleMain / macosMain source sets aren't named in this hierarchy,
+        // so we attach to each declared leaf directly.
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+        }
+        named("macosArm64Main") {
+            dependencies { implementation(libs.ktor.client.darwin) }
+        }
+        named("macosX64Main") {
+            dependencies { implementation(libs.ktor.client.darwin) }
         }
         named("commonTest") {
             dependencies {

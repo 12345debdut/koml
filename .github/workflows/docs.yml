@@ -1,0 +1,57 @@
+name: Publish Dokka site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'core/src/**/*.kt'
+      - 'storage/src/**/*.kt'
+      - 'download/src/**/*.kt'
+      - 'registry/src/**/*.kt'
+      - 'build.gradle.kts'
+      - 'gradle/libs.versions.toml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Generate Dokka HTML
+        run: ./gradlew dokkaHtmlMultiModule --no-daemon --stacktrace
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/dokka/htmlMultiModule
+
+  deploy:
+    needs: build-site
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

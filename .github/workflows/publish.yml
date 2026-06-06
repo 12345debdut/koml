@@ -1,0 +1,67 @@
+name: Publish to Maven Central
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish (e.g. v0.0.5). Leave blank for the current HEAD.'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    # Native libs are built on macOS (the iOS + JVM JNI dylibs are macOS-only
+    # tooling). A linux runner couldn't produce a complete artifact.
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout (with llama.cpp submodule)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle (with build cache)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build llama.cpp for iOS
+        run: ./scripts/build-llama-ios.sh
+        # ~10 min on a fresh macos-latest runner.
+
+      - name: Build llama.cpp for JVM (macOS arm64 + x64)
+        run: ./scripts/build-llama-jvm.sh
+
+      - name: Build llama.cpp for Kotlin/Native macOS
+        run: ./scripts/build-llama-macos-native.sh
+
+      - name: Run JVM tests (sanity gate before publishing)
+        run: ./gradlew :download:jvmTest :engine-llama:jvmTest --no-daemon
+
+      - name: Stage to Central Portal
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          SIGNING_IN_MEMORY_KEY: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          SIGNING_IN_MEMORY_KEY_PASSWORD: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+        run: ./gradlew publishToCentralPortal --no-daemon --stacktrace
+
+      - name: Summary
+        run: |
+          echo "## Staged to Central Portal" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Bundle is in **VALIDATED** state at https://central.sonatype.com/publishing/deployments." >> $GITHUB_STEP_SUMMARY
+          echo "Review the contents, then click **Publish** to release to Maven Central." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tag: \`${{ inputs.tag || github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY

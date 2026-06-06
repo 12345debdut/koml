@@ -32,6 +32,12 @@ class DefaultModelRegistry internal constructor(
     override suspend fun searchHuggingFace(query: String, ggufOnly: Boolean): List<ModelInfo> =
         searcher?.search(query, ggufOnly).orEmpty()
 
+    override suspend fun searchHuggingFaceWithDetails(
+        query: String,
+        ggufOnly: Boolean,
+    ): List<ModelInfo> =
+        searcher?.searchWithDetails(query, ggufOnly).orEmpty()
+
     override suspend fun resolve(id: String): ModelInfo? =
         CuratedModels.list.firstOrNull { it.id == id }
 }

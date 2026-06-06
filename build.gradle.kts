@@ -5,13 +5,14 @@ plugins {
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.skie) apply false
     alias(libs.plugins.nmcp.aggregation)
+    alias(libs.plugins.dokka)
 }
 
 // Single source of truth for group + version. Library modules pick these up via
 // subprojects { ... } below; sample modules ignore the publishing config entirely.
 allprojects {
     group = "dev.koml"
-    version = "0.0.4"
+    version = "0.0.5"
 }
 
 // Publishable modules. Anything not listed here is a sample/app and won't ship
@@ -23,6 +24,27 @@ subprojects {
 
     apply(plugin = "maven-publish")
     apply(plugin = "signing")
+
+    // Dokka is applied to every publishable module except :engine-llama —
+    // engine-llama's iOS/macOS native compilations require user-supplied
+    // static archives (build/llama-*/<arch>/lib/libkoml-llama.a) that we
+    // can't guarantee are present at docs-gen time. The bulk of the public
+    // KDoc lives in :core anyway; LlmKit + ChatTemplate are small enough to
+    // browse in source.
+    if (name != "engine-llama") {
+        apply(plugin = "org.jetbrains.dokka")
+
+        // Skip native source sets whose compilation requires user-supplied
+        // static archives. Dokka still documents commonMain + JVM/Android.
+        tasks.withType<org.jetbrains.dokka.gradle.DokkaTaskPartial>().configureEach {
+            dokkaSourceSets.configureEach {
+                val n = name.lowercase()
+                if (n.contains("ios") || n.contains("macos") || n.contains("apple")) {
+                    suppress.set(true)
+                }
+            }
+        }
+    }
 
     extensions.configure<PublishingExtension>("publishing") {
         publications.withType<MavenPublication>().configureEach {
@@ -83,6 +105,14 @@ subprojects {
         }
         sign(extensions.getByType<PublishingExtension>().publications)
     }
+}
+
+// Aggregated Dokka multi-module HTML site for github.io. Use:
+//   ./gradlew dokkaHtmlMultiModule
+// Output: build/dokka/htmlMultiModule/ (open index.html, or push to gh-pages branch).
+tasks.named<org.jetbrains.dokka.gradle.DokkaMultiModuleTask>("dokkaHtmlMultiModule") {
+    moduleName.set("Koml")
+    outputDirectory.set(rootProject.layout.buildDirectory.dir("dokka/htmlMultiModule"))
 }
 
 // Wire every publishable module's publications into the aggregation plugin so a

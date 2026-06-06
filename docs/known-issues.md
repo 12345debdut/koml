@@ -4,7 +4,7 @@ Non-blocking gotchas, workarounds in place, and the plan for each. Update this f
 
 ## 1. Metal disabled on iOS
 
-**Status:** workaround in place; tracking for Phase 3 or llama.cpp version bump.
+**Status:** deferred until the next llama.cpp version bump (which is a minor-version event per [VERSIONING.md](VERSIONING.md)). v0.0.x ships with CPU-only iOS — that's the supported configuration.
 
 **Symptom:** With `GGML_METAL=ON` + `GGML_METAL_EMBED_LIBRARY=ON` at llama.cpp **b5460**, the embedded Metal shader fails at runtime with:
 
@@ -72,9 +72,9 @@ When llama.cpp is invoked via `add_subdirectory()` (Android path), `LLAMA_STANDA
 ```
 Both `scripts/build-llama-ios.sh` and `scripts/build-llama-jvm.sh` do this. Tracked in `memory/project_llamacpp_standalone_build.md`.
 
-## 7. JVM platform coverage (macOS only in v0.0.2)
+## 7. JVM platform coverage (macOS only)
 
-**Status:** intentional v0.0.2 scope; Linux/Windows JVM builds are tracked for v0.0.4 (CI) or earlier if you need them.
+**Status:** **Linux and Windows are deferred past 1.0.** Both require additional CI infrastructure (Docker cross-build for Linux from macOS hosts; a Windows runner for the JNI dylib). Neither is on the v1.0 critical path — the existing `scripts/build-llama-jvm.sh` produces Linux/Windows libs when run on the target host. v1.x is the natural moment to add them once there's demand.
 
 `scripts/build-llama-jvm.sh` builds for macOS arm64 + x64 only. `LlamaNative.jvm.kt`'s `detectArch()` throws on Linux/Windows with a clear message pointing the user at the build script. To add Linux x64:
 1. Run `scripts/build-llama-jvm.sh` on a Linux host (or via Docker `linux/amd64`).
