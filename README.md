@@ -1,6 +1,6 @@
 # Koml
 
-[![CI](https://github.com/debdutsaha/koml/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/debdutsaha/koml/actions/workflows/ci.yml)
+[![CI](https://github.com/12345debdut/koml/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/12345debdut/koml/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.2.10-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.12345debdut/engine-llama?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.12345debdut/engine-llama)
@@ -282,7 +282,7 @@ One-time setup if you also want to build Koml itself from source: `./scripts/bui
 
 ## API documentation
 
-- **API reference (Dokka HTML site):** [https://debdutsaha.github.io/koml/](https://debdutsaha.github.io/koml/) (auto-published from `main` via `.github/workflows/docs.yml`)
+- **API reference (Dokka HTML site):** [https://12345debdut.github.io/koml/](https://12345debdut.github.io/koml/) (auto-published from `main` via `.github/workflows/docs.yml`)
 - **Versioning policy:** [`docs/VERSIONING.md`](docs/VERSIONING.md)
 - **Known issues:** [`docs/known-issues.md`](docs/known-issues.md)
 - **Per-phase journey:** [`docs/phase-1-summary.md`](docs/phase-1-summary.md) through [`docs/phase-4-summary.md`](docs/phase-4-summary.md)
@@ -308,7 +308,7 @@ Only needed if you're building Koml itself (not consuming it via Maven).
 
 ```bash
 # 1. Clone with the llama.cpp submodule
-git clone --recurse-submodules https://github.com/debdutsaha/koml.git
+git clone --recurse-submodules https://github.com/12345debdut/koml.git
 cd koml
 
 # 2. Host tooling
@@ -386,4 +386,4 @@ If you've used Koml and something feels awkward — **now is the time to file it
 
 ---
 
-Built by [@debdutsaha](https://github.com/debdutsaha). Maven Central: `io.github.12345debdut`.
+Built by [@12345debdut](https://github.com/12345debdut). Maven Central: `io.github.12345debdut`.

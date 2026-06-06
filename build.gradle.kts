@@ -97,7 +97,7 @@ subprojects {
                         "A thin, idiomatic Kotlin wrapper over llama.cpp with Flow-based " +
                         "streaming on Android, iOS, JVM desktop, and macOS native.",
                 )
-                url.set("https://github.com/debdutsaha/koml")
+                url.set("https://github.com/12345debdut/koml")
                 licenses {
                     license {
                         name.set("Apache License 2.0")
@@ -113,13 +113,13 @@ subprojects {
                     }
                 }
                 scm {
-                    url.set("https://github.com/debdutsaha/koml")
-                    connection.set("scm:git:https://github.com/debdutsaha/koml.git")
-                    developerConnection.set("scm:git:git@github.com:debdutsaha/koml.git")
+                    url.set("https://github.com/12345debdut/koml")
+                    connection.set("scm:git:https://github.com/12345debdut/koml.git")
+                    developerConnection.set("scm:git:git@github.com:12345debdut/koml.git")
                 }
                 issueManagement {
                     system.set("GitHub")
-                    url.set("https://github.com/debdutsaha/koml/issues")
+                    url.set("https://github.com/12345debdut/koml/issues")
                 }
             }
         }

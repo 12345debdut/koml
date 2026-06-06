@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Big new features are usually best discussed in [Discussions](https://github.com/debdutsaha/koml/discussions) first — this template is for concrete, well-scoped proposals that have already had a round of design conversation.
+        Big new features are usually best discussed in [Discussions](https://github.com/12345debdut/koml/discussions) first — this template is for concrete, well-scoped proposals that have already had a round of design conversation.
 
   - type: textarea
     id: motivation
